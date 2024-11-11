@@ -3,13 +3,15 @@
 #include <string>
 using namespace std;
 
-struct transaction {
+struct transaction
+{
     string date;
     double amount;
     transaction *next;
 };
 
-struct account {
+struct account
+{
     string IBAN;
     string accountName;
     double balance;
@@ -20,29 +22,31 @@ struct account {
     account *next;
 };
 
-struct user {
+struct user
+{
     int userID;
     string fname;
     string lname;
-    account *acct; 
-    user *next, *previous; 
+    account *acct;
+    user *next, *previous;
 };
 
-struct userList {
+struct userList
+{
     user *head, *tail;
 };
 
 void input_data()
 {
-    
 }
 
 void transfer(userList *mainlist, double amount, account *sender, account *target)
 {
     // Ma 3refet sewe shi
+    // hahahaha
 }
 
-int main ()
+int main()
 {
     input_data();
 }
