@@ -82,6 +82,57 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
     // hahahaha
 }
 
+void sort(userList *mainlist)
+{
+    user *usercur = mainlist->head;
+    account *acccur;
+    transaction *txn, *head;
+    transaction *prev, *temp, *maxdate, *tprev;
+    bool swap;
+
+    while (usercur != NULL)
+    {
+        acccur = usercur->acct;
+        while (acccur != NULL)
+        {
+            txn = acccur->txn;
+            head = txn;
+            maxdate = txn;
+            while (txn != NULL)
+            {
+                prev = txn;
+                temp = txn->next;
+                swap = false;
+                while (temp != NULL)
+                {
+                    if (compareDate(maxdate->date, temp->date))
+                    {
+                        tprev = prev;
+                        maxdate = temp;
+                        swap = true;
+                    }
+                    prev = prev->next;
+                    temp = temp->next;
+                }
+                if (swap && compareDate(txn->date, temp->date))
+                {
+                    tprev->next = maxdate->next;
+                    maxdate->next = head;
+                }
+                else if (swap && txn != head)
+                {
+                    tprev->next = txn->next;
+                    maxdate = txn;
+                    maxdate->next = head;
+                }
+                txn = txn->next;
+            }
+            acccur = acccur->next;
+        }
+        usercur = usercur->next;
+    }
+}
+
 void add_account(userList *mainlist, user *client, account *newacc)
 {
 
