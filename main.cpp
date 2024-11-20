@@ -207,53 +207,55 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
 userList *sort(userList *mainlist)
 {
     user *usercur = mainlist->head;
-    account *acccur;
-    transaction *txn, *head;
-    transaction *prev, *temp, *maxdate, *tprev;
-    bool swap;
 
     while (usercur != NULL)
     {
-        acccur = usercur->acct;
+        account *acccur = usercur->acct;
+        transaction *head, *sorted, *prev, *cur, *temp;
         while (acccur != NULL)
         {
-            txn = acccur->txn;
-            head = txn;
-            maxdate = txn;
-            while (txn != NULL)
+            head = acccur->txn;
+            if (!head)
             {
-                prev = txn;
-                temp = txn->next;
-                swap = false;
-                while (temp != NULL)
-                {
-                    if (compareDate(maxdate->date, temp->date))
-                    {
-                        tprev = prev;
-                        maxdate = temp;
-                        swap = true;
-                    }
-                    prev = prev->next;
-                    temp = temp->next;
-                }
-                if (swap && compareDate(txn->date, temp->date))
-                {
-                    tprev->next = maxdate->next;
-                    maxdate->next = head;
-                }
-                else if (swap && txn != head)
-                {
-                    tprev->next = txn->next;
-                    maxdate = txn;
-                    maxdate->next = head;
-                }
-                txn = txn->next;
+                acccur = acccur->next;
+                continue;
             }
+
+            sorted = NULL;
+
+            while (head != sorted)
+            {
+                cur = head;
+                prev = NULL;
+
+                while (cur->next != sorted)
+                {
+                    if (compareDate(cur->next->date, cur->date))
+                    {
+                        temp = cur->next;
+                        cur->next = temp->next;
+                        temp->next = cur;
+
+                        if (prev)
+                            prev->next = temp;
+                        else
+                            head = temp;
+
+                        prev = temp;
+                    }
+                    else
+                    {
+                        prev = cur;
+                        cur = cur->next;
+                    }
+                }
+                sorted = cur;
+            }
+            acccur->txn = head;
             acccur = acccur->next;
         }
         usercur = usercur->next;
     }
-
     return mainlist;
 }
 
@@ -368,5 +370,6 @@ int main()
     userList *mainlist = new userList;
 
     mainlist = input_data(mainlist);
+    sort(mainlist);
     export_data(mainlist);
 }
