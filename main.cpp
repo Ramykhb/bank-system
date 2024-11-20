@@ -72,8 +72,130 @@ bool compareDate(const string &dateStr, const string &dateStr1)
     return false;
 }
 
-void input_data()
+userList *input_data(userList *mainlist)
 {
+    ifstream txtfile("input.txt");
+    string line, temp;
+    bool firstuser = true;
+    bool firstacc = true;
+    bool firsttxn = true;
+    user *currentuser;
+    account *currentacc;
+    transaction *currenttxn;
+    int i;
+    while (getline(txtfile, line))
+    {
+        istringstream iss(line);
+        if (line[0] == '-')
+        {
+            firstacc = true;
+            user *newuser = new user;
+
+            if (!firstuser)
+            {
+                currentuser->next = newuser;
+                newuser->previous = currentuser;
+            }
+            else
+            {
+                firstuser = false;
+                mainlist->head = newuser;
+                newuser->previous = NULL;
+            }
+            currentuser = newuser;
+
+            getline(iss, temp, ',');
+            currentuser->userID = stoi(line.substr(1, temp.length() - 1));
+            getline(iss, currentuser->fname, ',');
+            getline(iss, currentuser->lname, '\n');
+            currentuser->next = NULL;
+            currentuser->acct = NULL;
+        }
+        else if (line[0] == '#')
+        {
+            account *newacc = new account;
+            firsttxn = true;
+
+            if (!firstacc)
+                currentacc->next = newacc;
+            else
+            {
+                firstacc = false;
+                currentuser->acct = newacc;
+            }
+            currentacc = newacc;
+            getline(iss, temp, ',');
+            currentacc->IBAN = temp.substr(1, temp.length() - 1);
+
+            getline(iss, currentacc->accountName, ',');
+
+            getline(iss, temp, ',');
+            for (i = 0; i < temp.length(); i++)
+            {
+                if (!isdigit(temp[i]))
+                {
+                    break;
+                }
+            }
+            currentacc->balance = stod(temp.substr(0, i));
+            currentacc->currency = temp.substr(i, temp.length() - i);
+
+            getline(iss, temp, ',');
+            for (i = 0; i < temp.length(); i++)
+            {
+                if (!isdigit(temp[i]))
+                {
+                    break;
+                }
+            }
+            currentacc->limitDepositPerDay = stod(temp.substr(0, i));
+
+            getline(iss, temp, '\n');
+            for (i = 0; i < temp.length(); i++)
+            {
+                if (!isdigit(temp[i]))
+                {
+                    break;
+                }
+            }
+            currentacc->limitWithdrawPerMonth = stod(temp.substr(0, i));
+            currentacc->next = NULL;
+            currentacc->txn = NULL;
+        }
+
+        else if (line[0] == '*')
+        {
+            transaction *newtxn = new transaction;
+            if (!firsttxn)
+                currenttxn->next = newtxn;
+            else
+            {
+                firsttxn = false;
+                currentacc->txn = newtxn;
+            }
+            currenttxn = newtxn;
+
+            getline(iss, temp, ',');
+            currenttxn->date = temp.substr(1, temp.length() - 1);
+            getline(iss, temp, '\n');
+            for (i = 1; i < temp.length(); i++)
+            {
+                if (!isdigit(temp[i]))
+                {
+                    break;
+                }
+            }
+            currenttxn->amount = stod(temp.substr(0, i));
+            currenttxn->next = NULL;
+        }
+        else
+        {
+            cout << "Invalid input file..." << endl;
+            exit(1);
+        }
+    }
+    mainlist->tail = currentuser;
+    return mainlist;
 }
 
 void transfer(userList *mainlist, double amount, account *sender, account *target)
@@ -82,7 +204,7 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
     // hahahaha
 }
 
-void sort(userList *mainlist)
+userList *sort(userList *mainlist)
 {
     user *usercur = mainlist->head;
     account *acccur;
@@ -131,6 +253,8 @@ void sort(userList *mainlist)
         }
         usercur = usercur->next;
     }
+
+    return mainlist;
 }
 
 void add_account(userList *mainlist, user *client, account *newacc)
@@ -221,7 +345,7 @@ void export_data(userList *mainlist)
     transaction *txncur;
     while (usercur != NULL)
     {
-        txtfile << "-" << usercur->fname << "," << usercur->lname << "\n";
+        txtfile << "-" << usercur->userID << "," << usercur->fname << "," << usercur->lname << "\n";
         acccur = usercur->acct;
         while (acccur != NULL)
         {
@@ -241,5 +365,8 @@ void export_data(userList *mainlist)
 
 int main()
 {
-    input_data();
+    userList *mainlist = new userList;
+
+    mainlist = input_data(mainlist);
+    export_data(mainlist);
 }
