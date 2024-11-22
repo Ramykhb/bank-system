@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <ctime>
 using namespace std;
 
 struct transaction
@@ -70,6 +71,16 @@ bool compareDate(const string &dateStr, const string &dateStr1)
     if (tp1 <= tp2)
         return true;
     return false;
+}
+
+string getCurrentDate()
+{
+    auto now = std::time(nullptr);
+    std::tm *localTime = std::localtime(&now);
+
+    char buffer[20];
+    std::strftime(buffer, sizeof(buffer), "%d/%m/%Y", localTime);
+    return string(buffer);
 }
 
 userList *input_data(userList *mainlist)
@@ -194,15 +205,115 @@ userList *input_data(userList *mainlist)
             exit(1);
         }
     }
-    cout << currentuser->fname;
     mainlist->tail = currentuser;
     return mainlist;
 }
 
+double convert(double amount, string sendercur, string targetcur)
+{
+    if (sendercur == "$" && targetcur == "€")
+        return amount * 0.92;
+    else if (sendercur == "$" && targetcur == "L.L")
+        return amount * 90000;
+    else if (sendercur == "L.L" && targetcur == "€")
+        return convert(amount * 0.92, "$", "€");
+    else if (sendercur == "L.L" && targetcur == "$")
+        return amount / 90000;
+    else if (sendercur == "€" && targetcur == "$")
+        return amount / 0.92;
+    else if (sendercur == "€" && targetcur == "L.L")
+        return convert(amount / 0.92, "$", "L.L");
+    return amount;
+}
+
 void transfer(userList *mainlist, double amount, account *sender, account *target)
 {
-    // Ma 3refet sewe shi
-    // hahahaha
+    user *usercur = mainlist->head;
+    account *acccur;
+    bool found = false;
+
+    while (usercur != NULL)
+    {
+        acccur = usercur->acct;
+        while (acccur != NULL)
+        {
+            if (acccur->IBAN == sender->IBAN)
+                if (acccur->balance >= amount && acccur->limitWithdrawPerMonth >= amount)
+                {
+                    found = true;
+                    break;
+                }
+                else
+                {
+                    cout << "Insufficient balance or limit..." << endl;
+                    return;
+                }
+            acccur = acccur->next;
+        }
+        if (found)
+            break;
+        usercur = usercur->next;
+    }
+    if (!found)
+    {
+        cout << "Sender account not found..." << endl;
+        return;
+    }
+
+    found = false;
+    usercur = mainlist->head;
+    account *targetacc;
+    double amount2;
+
+    while (usercur != NULL)
+    {
+        targetacc = usercur->acct;
+        while (targetacc != NULL)
+        {
+            if (targetacc->IBAN == target->IBAN)
+            {
+                amount2 = convert(amount, acccur->currency, targetacc->currency);
+                if (targetacc->limitDepositPerDay >= amount2)
+                {
+                    found = true;
+                    break;
+                }
+                else
+                {
+                    cout << "Limit exceeded..." << endl;
+                    return;
+                }
+            }
+            targetacc = targetacc->next;
+        }
+        if (found)
+            break;
+        usercur = usercur->next;
+    }
+    if (!found)
+    {
+        cout << "Target account not found..." << endl;
+        return;
+    }
+    else
+    {
+        transaction *send = new transaction;
+        transaction *receive = new transaction;
+
+        acccur->balance -= amount;
+        acccur->limitWithdrawPerMonth -= amount;
+        send->amount = -amount;
+        send->date = getCurrentDate();
+        send->next = acccur->txn;
+        acccur->txn = send;
+
+        targetacc->balance += amount2;
+        targetacc->limitDepositPerDay += amount2;
+        receive->amount = amount2;
+        receive->date = getCurrentDate();
+        receive->next = targetacc->txn;
+        targetacc->txn = receive;
+    }
 }
 
 userList *sort(userList *mainlist)
@@ -351,7 +462,6 @@ void export_data(userList *mainlist)
     user *usercur = mainlist->head;
     account *acccur;
     transaction *txncur;
-    cout << 1 << mainlist->head->fname;
     while (usercur != NULL)
     {
         txtfile << "-" << usercur->userID << "," << usercur->fname << "," << usercur->lname << "\n";
@@ -375,18 +485,12 @@ void export_data(userList *mainlist)
 int main()
 {
     userList *mainlist = new userList;
+    account *a1 = new account;
+    account *a2 = new account;
+    a1->IBAN = "L001";
+    a2->IBAN = "B002";
+    mainlist = input_data(mainlist);
 
-    /* mainlist = input_data(mainlist);
-    account *temp = new account;
-    temp->accountName = "ramy";
-    temp->balance = 500;
-    temp->limitDepositPerDay = 500;
-    temp->limitWithdrawPerMonth = 500;                      ->Testing l add account
-    temp->currency = "usd";
-    temp->txn = NULL;
-    temp->IBAN = "R123";
-    cout << mainlist->head->fname;
-    mainlist = add_account(mainlist, mainlist->head->next, temp); */
-
+    transfer(mainlist, 1, a1, a2);
     export_data(mainlist);
 }
