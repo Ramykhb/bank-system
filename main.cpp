@@ -194,6 +194,7 @@ userList *input_data(userList *mainlist)
             exit(1);
         }
     }
+    cout << currentuser->fname;
     mainlist->tail = currentuser;
     return mainlist;
 }
@@ -207,76 +208,81 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
 userList *sort(userList *mainlist)
 {
     user *usercur = mainlist->head;
+    account *acccur;
+    transaction *txn, *head;
+    transaction *prev, *temp, *maxdate, *tprev;
+    bool swap;
 
     while (usercur != NULL)
     {
-        account *acccur = usercur->acct;
-        transaction *head, *sorted, *prev, *cur, *temp;
+        acccur = usercur->acct;
         while (acccur != NULL)
         {
-            head = acccur->txn;
-            if (!head)
+            txn = acccur->txn;
+            head = txn;
+            maxdate = txn;
+            while (txn != NULL)
             {
-                acccur = acccur->next;
-                continue;
-            }
-
-            sorted = NULL;
-
-            while (head != sorted)
-            {
-                cur = head;
-                prev = NULL;
-
-                while (cur->next != sorted)
+                prev = txn;
+                temp = txn->next;
+                swap = false;
+                while (temp != NULL)
                 {
-                    if (compareDate(cur->next->date, cur->date))
+                    if (compareDate(maxdate->date, temp->date))
                     {
-                        temp = cur->next;
-                        cur->next = temp->next;
-                        temp->next = cur;
-
-                        if (prev)
-                            prev->next = temp;
-                        else
-                            head = temp;
-
-                        prev = temp;
+                        tprev = prev;
+                        maxdate = temp;
+                        swap = true;
                     }
-                    else
-                    {
-                        prev = cur;
-                        cur = cur->next;
-                    }
+                    prev = prev->next;
+                    temp = temp->next;
                 }
-                sorted = cur;
+                if (swap && compareDate(txn->date, temp->date))
+                {
+                    tprev->next = maxdate->next;
+                    maxdate->next = head;
+                }
+                else if (swap && txn != head)
+                {
+                    tprev->next = txn->next;
+                    maxdate = txn;
+                    maxdate->next = head;
+                }
+                txn = txn->next;
             }
-            acccur->txn = head;
             acccur = acccur->next;
         }
         usercur = usercur->next;
     }
+
     return mainlist;
 }
 
-void add_account(userList *mainlist, user *client, account *newacc)
+userList *add_account(userList *mainlist, user *client, account *temp)
 {
-
-    // NOTE: ma baaref iza zabta ma sawet testing, baaden mensewe l testing...
-
     user *usercur = mainlist->head;
     account *acccur;
+    account *newacc = new account;
+    newacc = temp;
+    newacc->next = NULL;
     while (usercur != NULL)
     {
         if (usercur == client)
         {
             acccur = usercur->acct;
+            if (acccur == NULL)
+            {
+                cout << "Account added successfully..." << endl;
+                usercur->acct = newacc;
+                return mainlist;
+            }
+
             while (acccur->next != NULL)
             {
                 if (acccur->IBAN == newacc->IBAN)
                 {
                     cout << "Account already exists..." << endl;
-                    return;
+                    return mainlist;
                 }
                 acccur = acccur->next;
             }
@@ -284,19 +290,19 @@ void add_account(userList *mainlist, user *client, account *newacc)
             if (acccur->IBAN == newacc->IBAN)
             {
                 cout << "Account already exists..." << endl;
-                return;
+                return mainlist;
             }
 
             acccur->next = newacc;
             cout << "Account added successfully..." << endl;
-            return;
+            return mainlist;
         }
 
         usercur = usercur->next;
     }
 
     cout << "User not found..." << endl;
-    return;
+    return mainlist;
 }
 
 void delete_transactions(userList *mainlist, string date)
@@ -341,10 +347,11 @@ void delete_transactions(userList *mainlist, string date)
 
 void export_data(userList *mainlist)
 {
-    ofstream txtfile("input.txt");
+    ofstream txtfile("output.txt");
     user *usercur = mainlist->head;
     account *acccur;
     transaction *txncur;
+    cout << 1 << mainlist->head->fname;
     while (usercur != NULL)
     {
         txtfile << "-" << usercur->userID << "," << usercur->fname << "," << usercur->lname << "\n";
@@ -369,7 +376,17 @@ int main()
 {
     userList *mainlist = new userList;
 
-    mainlist = input_data(mainlist);
-    sort(mainlist);
+    /* mainlist = input_data(mainlist);
+    account *temp = new account;
+    temp->accountName = "ramy";
+    temp->balance = 500;
+    temp->limitDepositPerDay = 500;
+    temp->limitWithdrawPerMonth = 500;                      ->Testing l add account
+    temp->currency = "usd";
+    temp->txn = NULL;
+    temp->IBAN = "R123";
+    cout << mainlist->head->fname;
+    mainlist = add_account(mainlist, mainlist->head->next, temp); */
+
     export_data(mainlist);
 }
