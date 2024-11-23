@@ -83,6 +83,20 @@ string getCurrentDate()
     return string(buffer);
 }
 
+double subtractdate(string date1, string date2)
+{
+    tm time1 = {}, time2 = {};
+    istringstream ss1(date1), ss2(date2);
+    ss1 >> get_time(&time1, "%d/%m/%Y");
+    ss2 >> get_time(&time2, "%d/%m/%Y");
+
+    std::chrono::system_clock::time_point tp1 = chrono::system_clock::from_time_t(mktime(&time1));
+    std::chrono::system_clock::time_point tp2 = chrono::system_clock::from_time_t(mktime(&time2));
+    chrono::duration<double> dif = tp1 - tp2;
+
+    return dif.count() / 86400;
+}
+
 userList *input_data(userList *mainlist)
 {
     ifstream txtfile("input.txt");
@@ -230,7 +244,10 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
 {
     user *usercur = mainlist->head;
     account *acccur;
+    transaction *txn;
+    double sum = 0, sub;
     bool found = false;
+    string curdate = getCurrentDate();
 
     while (usercur != NULL)
     {
@@ -238,7 +255,17 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
         while (acccur != NULL)
         {
             if (acccur->IBAN == sender->IBAN)
-                if (acccur->balance >= amount && acccur->limitWithdrawPerMonth >= amount)
+            {
+                txn = acccur->txn;
+                while (txn != NULL)
+                {
+                    sub = subtractdate(curdate, txn->date);
+                    if (sub <= 30 && txn->amount < 0)
+                        sum -= txn->amount;
+                    txn = txn->next;
+                }
+                cout << sum << '\n';
+                if (acccur->balance >= amount && acccur->limitWithdrawPerMonth >= sub)
                 {
                     found = true;
                     break;
@@ -248,6 +275,7 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
                     cout << "Insufficient balance or limit..." << endl;
                     return;
                 }
+            }
             acccur = acccur->next;
         }
         if (found)
@@ -261,6 +289,7 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
     }
 
     found = false;
+    sum = 0;
     usercur = mainlist->head;
     account *targetacc;
     double amount2;
@@ -272,8 +301,15 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
         {
             if (targetacc->IBAN == target->IBAN)
             {
-                amount2 = convert(amount, acccur->currency, targetacc->currency);
-                if (targetacc->limitDepositPerDay >= amount2)
+                while (txn != NULL)
+                {
+                    sub = subtractdate(curdate, txn->date);
+                    if (sub <= 1 && txn->amount > 0)
+                        sum += txn->amount;
+                    txn = txn->next;
+                }
+                cout << sum << '\n';
+                if (targetacc->limitDepositPerDay >= sum)
                 {
                     found = true;
                     break;
@@ -299,18 +335,17 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
     {
         transaction *send = new transaction;
         transaction *receive = new transaction;
+        amount2 = convert(amount, acccur->currency, targetacc->currency);
 
         acccur->balance -= amount;
-        acccur->limitWithdrawPerMonth -= amount;
         send->amount = -amount;
-        send->date = getCurrentDate();
+        send->date = curdate;
         send->next = acccur->txn;
         acccur->txn = send;
 
         targetacc->balance += amount2;
-        targetacc->limitDepositPerDay += amount2;
         receive->amount = amount2;
-        receive->date = getCurrentDate();
+        receive->date = curdate;
         receive->next = targetacc->txn;
         targetacc->txn = receive;
     }
