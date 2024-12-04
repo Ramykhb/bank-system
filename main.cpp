@@ -45,7 +45,7 @@ struct userList
     user *head, *tail;
 };
 
-void print_euro(const wchar_t* str)
+void print_euro(const wchar_t *str)
 {
     WriteConsoleW(GetStdHandle(STD_OUTPUT_HANDLE), str, wcslen(str), NULL, NULL);
 }
@@ -57,7 +57,8 @@ bool isValidDate(const string &dateStr)
     ss >> get_time(&time, "%d/%m/%Y");
     if (ss.fail())
     {
-        cout <<RED<< "Invalid date format...\n"<<RESET;
+        cout << RED << "Invalid date format...\n"
+             << RESET;
         return false;
     }
     return true;
@@ -241,13 +242,13 @@ double convert(double amount, string sendercur, string targetcur)
     else if (sendercur == "$" && targetcur == "L.L")
         return amount * 90000;
     else if (sendercur == "L.L" && targetcur == "€")
-        return convert(amount * 0.92, "$", "€");
+        return amount / 90000 * 0.92;
     else if (sendercur == "L.L" && targetcur == "$")
         return amount / 90000;
     else if (sendercur == "€" && targetcur == "$")
         return amount / 0.92;
     else if (sendercur == "€" && targetcur == "L.L")
-        return convert(amount / 0.92, "$", "L.L");
+        return amount * 90000 / 0.92;
     return amount;
 }
 
@@ -282,7 +283,7 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
                 }
                 else
                 {
-                    cout << RED << "Insufficient balance or limit..." << RESET <<endl;
+                    cout << RED << "Insufficient balance or limit..." << RESET << endl;
                     return;
                 }
             }
@@ -294,7 +295,7 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
     }
     if (!found)
     {
-        cout << RED << "Sender account not found..." << RESET <<endl;
+        cout << RED << "Sender account not found..." << RESET << endl;
         return;
     }
 
@@ -359,59 +360,59 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
         targetacc->txn = receive;
     }
 
-    cout<<GREEN<<"Transaction completed successfully..."<<RESET<<endl;
+    cout << GREEN << "Transaction completed successfully..." << RESET << endl;
 }
-
 userList *sort(userList *mainlist)
 {
     user *usercur = mainlist->head;
-    account *acccur;
-    transaction *txn, *head;
-    transaction *prev, *temp, *maxdate, *tprev;
-    bool swap;
 
     while (usercur != NULL)
     {
-        acccur = usercur->acct;
+        account *acccur = usercur->acct;
         while (acccur != NULL)
         {
-            txn = acccur->txn;
-            head = txn;
-            maxdate = txn;
-            while (txn != NULL)
+            transaction *head = acccur->txn;
+            if (!head)
             {
-                prev = txn;
-                temp = txn->next;
-                swap = false;
-                while (temp != NULL)
-                {
-                    if (compareDate(maxdate->date, temp->date))
-                    {
-                        tprev = prev;
-                        maxdate = temp;
-                        swap = true;
-                    }
-                    prev = prev->next;
-                    temp = temp->next;
-                }
-                if (swap && compareDate(txn->date, temp->date))
-                {
-                    tprev->next = maxdate->next;
-                    maxdate->next = head;
-                }
-                else if (swap && txn != head)
-                {
-                    tprev->next = txn->next;
-                    maxdate = txn;
-                    maxdate->next = head;
-                }
-                txn = txn->next;
+                acccur = acccur->next;
+                continue;
             }
+
+            transaction *sorted = NULL;
+
+            while (head != sorted)
+            {
+                transaction *cur = head;
+                transaction *prev = NULL;
+
+                while (cur->next != sorted)
+                {
+                    if (compareDate(cur->date, cur->next->date))
+                    {
+                        transaction *next = cur->next;
+                        cur->next = next->next;
+                        next->next = cur;
+
+                        if (prev)
+                            prev->next = next;
+                        else
+                            head = next;
+
+                        prev = next;
+                    }
+                    else
+                    {
+                        prev = cur;
+                        cur = cur->next;
+                    }
+                }
+                sorted = cur;
+            }
+            acccur->txn = head;
             acccur = acccur->next;
         }
         usercur = usercur->next;
     }
-
     return mainlist;
 }
 
@@ -464,13 +465,13 @@ userList *add_account(userList *mainlist, user *client, account *temp)
 
 userList *create_account(userList *mainlist)
 {
-    //TODO
+    // TODO
     return mainlist;
 }
 
 userList *create_user(userList *mainlist)
 {
-    //TODO
+    // TODO
     return mainlist;
 }
 
@@ -488,32 +489,32 @@ int display_accounts(userList *mainlist)
         while (acccur != NULL)
         {
             accounts = false;
-            cout<<"\tAccount "<<i++<<":"<<endl;
-            cout<<"\tIBAN: "<<acccur->IBAN<<endl;
-            cout<<"\tName: "<<acccur->accountName<<endl;
-            cout<<"\tCurrency: ";
+            cout << "\tAccount " << i++ << ":" << endl;
+            cout << "\tIBAN: " << acccur->IBAN << endl;
+            cout << "\tName: " << acccur->accountName << endl;
+            cout << "\tCurrency: ";
             if (acccur->currency != "$" && acccur->currency != "L.L")
             {
                 print_euro(L"€\n");
             }
             else
             {
-                cout<<acccur->currency<<endl;
+                cout << acccur->currency << endl;
             }
-            cout<<"\tBalance: "<<acccur->balance<<endl;
-            cout<<"\tLimit deposit per day: "<<acccur->limitDepositPerDay<<endl;
-            cout<<"\tLimit withdraw per month: "<<acccur->limitWithdrawPerMonth<<endl<<endl;
+            cout << "\tBalance: " << acccur->balance << endl;
+            cout << "\tLimit deposit per day: " << acccur->limitDepositPerDay << endl;
+            cout << "\tLimit withdraw per month: " << acccur->limitWithdrawPerMonth << endl
+                 << endl;
             acccur = acccur->next;
         }
         usercur = usercur->next;
     }
     if (accounts)
     {
-        cout<<RED<<"No accounts found..."<<RESET<<endl;
+        cout << RED << "No accounts found..." << RESET << endl;
         return 0;
     }
     return 1;
-    
 }
 
 userList *delete_transactions(userList *mainlist, string date)
@@ -531,6 +532,7 @@ userList *delete_transactions(userList *mainlist, string date)
             if (acccur->txn != NULL)
             {
                 transcur = acccur->txn->next;
+                previous = acccur->txn;
                 while (transcur != NULL)
                 {
                     if (compareDate(transcur->date, date))
@@ -593,7 +595,8 @@ int main()
     bool error;
     string date;
     double amount;
-    cout<<"Welcome to Cedars Bank...\n";
+    cout << "Welcome to Cedars Bank...\n";
+    sort(mainlist);
     while (true)
     {
         error = false;
@@ -601,16 +604,16 @@ int main()
         {
             if (error)
             {
-                cout<<RED<<"Invalid input..."<<RESET<<endl;
+                cout << RED << "Invalid input..." << RESET << endl;
             }
-            cout<<"How can we help you?\n";
-            cout<<setw(5)<<1<<" Create a new user...\n";
-            cout<<setw(5)<<2<<" Create a new account...\n";
-            cout<<setw(5)<<3<<" Transfer money to another account...\n";
-            cout<<setw(5)<<4<<" Delete transactions before a specified date...\n";
-            cout<<setw(5)<<0<<" Exit application...\n";
-            cout<<"-> ";
-            cin>>input;
+            cout << "How can we help you?\n";
+            cout << setw(5) << 1 << " Create a new user...\n";
+            cout << setw(5) << 2 << " Create a new account...\n";
+            cout << setw(5) << 3 << " Transfer money to another account...\n";
+            cout << setw(5) << 4 << " Delete transactions before a specified date...\n";
+            cout << setw(5) << 0 << " Exit application...\n";
+            cout << "-> ";
+            cin >> input;
             error = true;
         } while (input < 0 || input > 4);
         cin.ignore();
@@ -632,17 +635,17 @@ int main()
             if (input == 1)
             {
                 account acc1, acc2;
-                cout<<"Enter the IBAN of the sender:\n";
-                cout<<"-> ";
+                cout << "Enter the IBAN of the sender:\n";
+                cout << "-> ";
                 getline(cin, acc1.IBAN);
-                cout<<"Enter the IBAN of the receiver:\n";
-                cout<<"-> ";
+                cout << "Enter the IBAN of the receiver:\n";
+                cout << "-> ";
                 getline(cin, acc2.IBAN);
                 do
                 {
-                    cout<<"Enter the amount to send:"<<endl;
-                    cout<<"-> ";
-                    cin>>amount;
+                    cout << "Enter the amount to send:" << endl;
+                    cout << "-> ";
+                    cin >> amount;
                 } while (amount < 0);
                 transfer(mainlist, amount, &acc1, &acc2);
             }
@@ -651,32 +654,33 @@ int main()
         {
             do
             {
-                cout<<"Enter a specified date (dd/mm/yyyy)\n";
-                cout<<"-> ";
+                cout << "Enter a specified date (dd/mm/yyyy)\n";
+                cout << "-> ";
                 getline(cin, date);
             } while (!isValidDate(date));
-            
+
             error = false;
             do
             {
-                if(error)
+                if (error)
                 {
-                    cout<<RED<<"Invalid input..."<<RESET<<endl;
+                    cout << RED << "Invalid input..." << RESET << endl;
                 }
-                cout<<"This action cannot be undone, do you want to proceed? [y/n]: "<<endl;
-                cout<<"-> ";
-                cin>>inputchar;
+                cout << "This action cannot be undone, do you want to proceed? [y/n]: " << endl;
+                cout << "-> ";
+                cin >> inputchar;
                 error = true;
             } while (tolower(inputchar) != 'y' && tolower(inputchar) != 'n');
 
             if (tolower(inputchar) == 'y')
             {
-                cout<<GREEN<<"Proceeding..."<<endl;
+                cout << GREEN << "Proceeding..." << endl;
                 mainlist = delete_transactions(mainlist, date);
-                cout<<"All transactions before "<<date<<" were successfully deleted..."<<RESET<<endl;
-            } 
+                cout << "All transactions before " << date << " were successfully deleted..." << RESET << endl;
+            }
         }
     }
-    cout<<GREEN<<"Thanks for using our services..."<<endl<<"Exiting app..."<<RESET<<endl;
+    cout << GREEN << "Thanks for using our services..." << endl
+         << "Exiting app..." << RESET << endl;
     export_data(mainlist);
 }
