@@ -430,7 +430,7 @@ userList *add_account(userList *mainlist, user *client, account *temp)
             acccur = usercur->acct;
             if (acccur == NULL)
             {
-                cout << "Account added successfully..." << endl;
+                cout << GREEN << "Account added successfully..." << RESET << endl;
                 usercur->acct = newacc;
                 return mainlist;
             }
@@ -439,7 +439,7 @@ userList *add_account(userList *mainlist, user *client, account *temp)
             {
                 if (acccur->IBAN == newacc->IBAN)
                 {
-                    cout << "Account already exists..." << endl;
+                    cout << RED << "Account already exists..." << RESET << endl;
                     return mainlist;
                 }
                 acccur = acccur->next;
@@ -447,31 +447,199 @@ userList *add_account(userList *mainlist, user *client, account *temp)
 
             if (acccur->IBAN == newacc->IBAN)
             {
-                cout << "Account already exists..." << endl;
+                cout << RED << "Account already exists..." << RESET << endl;
                 return mainlist;
             }
 
             acccur->next = newacc;
-            cout << "Account added successfully..." << endl;
+            cout << GREEN << "Account added successfully..." << RESET << endl;
             return mainlist;
         }
 
         usercur = usercur->next;
     }
 
-    cout << "User not found..." << endl;
+    cout << RED << "User not found..." << RESET << endl;
     return mainlist;
 }
 
 userList *create_account(userList *mainlist)
 {
-    // TODO
-    return mainlist;
+    user *current = mainlist->head;
+    bool error;
+    int i = 0, input;
+    if (current == NULL)
+    {
+        cout << RED << "No users available, please create a user before proceeding..." << RESET << endl;
+        return mainlist;
+    }
+    cout << setw(5) << "ID" << setw(30) << "Name" << endl;
+    while (current != NULL)
+    {
+        cout << setw(5) << current->userID << setw(30) << current->fname + " " + current->lname << endl;
+        i++;
+        current = current->next;
+    }
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid ID..." << RESET << endl;
+        }
+        cout << "Enter the user ID that you want too create a new account to: ";
+        cout << "-> ";
+        error = true;
+        cin >> input;
+    } while (input <= 0 || input > i);
+
+    current = mainlist->head;
+    while (current != NULL)
+    {
+        if (current->userID == input)
+            break;
+        current = current->next;
+    }
+
+    account *newacc = new account;
+    cin.ignore();
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid input..." << RESET << endl;
+        }
+        cout << "Enter the IBAN of your account...\n-> ";
+        getline(cin, newacc->IBAN);
+        error = true;
+
+    } while (newacc->IBAN == "");
+
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid input..." << RESET << endl;
+        }
+        cout << "Enter the name of your account...\n-> ";
+        getline(cin, newacc->accountName);
+        error = true;
+
+    } while (newacc->accountName == "");
+
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid input..." << RESET << endl;
+        }
+        cout << "Enter the currency of your account...\n-> ";
+        getline(cin, newacc->currency);
+        error = true;
+
+    } while (newacc->currency != "€" && newacc->currency != "$" && newacc->currency != "L.L");
+
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid input..." << RESET << endl;
+        }
+        cout << "Enter the balance of your account...\n-> ";
+        cin >> newacc->balance;
+        error = true;
+
+    } while (newacc->balance < 0);
+
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid input..." << RESET << endl;
+        }
+        cout << "Enter the limit deposit per day of your account...\n-> ";
+        cin >> newacc->limitDepositPerDay;
+        error = true;
+
+    } while (newacc->limitDepositPerDay < 0);
+
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid input..." << RESET << endl;
+        }
+        cout << "Enter the limit withdraw per month of your account...\n-> ";
+        cin >> newacc->limitWithdrawPerMonth;
+        error = true;
+
+    } while (newacc->limitWithdrawPerMonth < 0);
+
+    return add_account(mainlist, current, newacc);
 }
 
 userList *create_user(userList *mainlist)
 {
-    // TODO
+    int i = 0;
+    bool error;
+    user *newuser = new user;
+    if (mainlist->head != NULL)
+    {
+        i = mainlist->tail->userID + 1;
+    }
+
+    newuser->userID = i;
+
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid input..." << RESET << endl;
+        }
+        cout << "Enter your first name...\n-> ";
+        getline(cin, newuser->fname);
+        error = true;
+
+    } while (newuser->fname == "");
+
+    error = false;
+    do
+    {
+        if (error)
+        {
+            cout << RED << "Invalid input..." << RESET << endl;
+        }
+        cout << "Enter your last name...\n-> ";
+        getline(cin, newuser->lname);
+        error = true;
+
+    } while (newuser->lname == "");
+
+    // newuser->next = NULL;
+    // newuser->previous = mainlist->tail;
+    // mainlist->tail->next = newuser;
+    // mainlist->tail = newuser;
+    newuser->next = NULL;
+    newuser->acct = NULL;
+    if (mainlist->head == NULL)
+    {
+        mainlist->head = newuser;
+        mainlist->tail = newuser;
+    }
+    else
+    {
+        mainlist->tail->next = newuser;
+        newuser->previous = mainlist->tail;
+        mainlist->tail = newuser;
+    }
+    cout << GREEN << "User added successfully..." << RESET << endl;
     return mainlist;
 }
 
