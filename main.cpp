@@ -388,7 +388,7 @@ userList *sort(userList *mainlist)
 
                 while (cur->next != sorted)
                 {
-                    if (compareDate(cur->date, cur->next->date))
+                    if (!compareDate(cur->date, cur->next->date))
                     {
                         transaction *next = cur->next;
                         cur->next = next->next;
@@ -617,6 +617,138 @@ userList *create_account(userList *mainlist)
     return add_account(mainlist, temp, newacc);
 }
 
+userList *deposit_withdraw(userList *mainlist, int choice)
+{
+    string IBAN;
+    double amount;
+    double total = 0;
+    account *acccur;
+    transaction *txncur;
+    bool found = false;
+    user *usercur = mainlist->head;
+    string today = getCurrentDate();
+    cout << "Enter the IBAN of the account:\n";
+    cout << ORANGE << "-> " << RESET;
+    getline(cin, IBAN);
+    for (int i = 0; i < IBAN.length(); i++)
+    {
+        IBAN[i] = toupper(IBAN[i]);
+    }
+
+    do
+    {
+        if (choice == 1)
+            cout << "Enter the amount to deposit:" << endl;
+        else
+            cout << "Enter the amount to withdraw:" << endl;
+        cout << ORANGE << "-> " << RESET;
+        cin >> amount;
+    } while (amount < 0);
+    total += amount;
+    while (usercur != NULL)
+    {
+        acccur = usercur->acct;
+        while (acccur != NULL)
+        {
+            if (acccur->IBAN == IBAN)
+            {
+                found = true;
+                break;
+            }
+            acccur = acccur->next;
+        }
+        if (found)
+        {
+            break;
+        }
+        usercur = usercur->next;
+    }
+    if (!found)
+    {
+        cout << RED << "Account not found..." << RESET << endl;
+        return mainlist;
+    }
+
+    if (choice == 1)
+    {
+        txncur = acccur->txn;
+        while (txncur != NULL)
+        {
+            if (txncur->amount > 0 && txncur->date == today)
+            {
+                total += txncur->amount;
+            }
+            txncur = txncur->next;
+        }
+        if (total > acccur->limitDepositPerDay)
+        {
+            cout << RED << "Limit deposit per day reached..." << RESET << endl;
+        }
+        else
+        {
+            acccur->balance += amount;
+            transaction *newtxn = new transaction;
+            newtxn->date = today;
+            newtxn->amount = amount;
+            newtxn->next = NULL;
+            if (acccur->txn == NULL)
+            {
+                acccur->txn = newtxn;
+            }
+            else
+            {
+                txncur = acccur->txn;
+                while (txncur->next != NULL)
+                {
+                    txncur = txncur->next;
+                }
+                txncur->next = newtxn;
+            }
+            cout << GREEN << "Amount deposited successfully..." << RESET << endl;
+        }
+    }
+    else
+    {
+        txncur = acccur->txn;
+
+        while (txncur != NULL)
+        {
+            if (txncur->amount < 0 && txncur->date.substr(3, 7) == today.substr(3, 7))
+            {
+                total += -1 * txncur->amount;
+            }
+            txncur = txncur->next;
+        }
+        if (total > acccur->limitWithdrawPerMonth)
+        {
+            cout << RED << "Limit withdraw per month reached..." << RESET << endl;
+        }
+        else
+        {
+            acccur->balance -= amount;
+            transaction *newtxn = new transaction;
+            newtxn->date = today;
+            newtxn->amount = -1 * amount;
+            newtxn->next = NULL;
+            if (acccur->txn == NULL)
+            {
+                acccur->txn = newtxn;
+            }
+            else
+            {
+                txncur = acccur->txn;
+                while (txncur->next != NULL)
+                {
+                    txncur = txncur->next;
+                }
+                txncur->next = newtxn;
+            }
+            cout << GREEN << "Amount withdrawn successfully..." << RESET << endl;
+        }
+    }
+    return mainlist;
+}
+
 userList *create_user(userList *mainlist)
 {
     int i = 0;
@@ -820,7 +952,7 @@ int main()
     string date;
     double amount;
     cout << "\nWelcome to Cedars Bank...\n";
-    sort(mainlist);
+    mainlist = sort(mainlist);
     while (true)
     {
         error = false;
@@ -833,13 +965,14 @@ int main()
             cout << "How can we help you?\n";
             cout << ORANGE << setw(5) << 1 << RESET << " Create a new user...\n";
             cout << ORANGE << setw(5) << 2 << RESET << " Create a new account...\n";
-            cout << ORANGE << setw(5) << 3 << RESET << " Transfer money to another account...\n";
-            cout << ORANGE << setw(5) << 4 << RESET << " Delete transactions before a specified date...\n";
+            cout << ORANGE << setw(5) << 3 << RESET << " Deposit/Withdraw money from account...\n";
+            cout << ORANGE << setw(5) << 4 << RESET << " Transfer money to another account...\n";
+            cout << ORANGE << setw(5) << 5 << RESET << " Delete transactions before a specified date...\n";
             cout << ORANGE << setw(5) << 0 << RESET << " Exit application...\n";
             cout << ORANGE << "-> " << RESET;
             cin >> input;
             error = true;
-        } while (input < 0 || input > 4);
+        } while (input < 0 || input > 5);
         cin.ignore();
         if (input == 0)
         {
@@ -855,6 +988,27 @@ int main()
         }
         else if (input == 3)
         {
+            error = false;
+            do
+            {
+                if (error)
+                {
+                    cout << RED << "Invalid input..." << RESET << endl;
+                }
+                cout << ORANGE << setw(5) << 1 << RESET << " Deposit money to account...\n";
+                cout << ORANGE << setw(5) << 2 << RESET << " Withdraw money from account...\n";
+                cout << ORANGE << "-> " << RESET;
+                cin >> input;
+                error = true;
+            } while (input < 1 || input > 2);
+            cin.ignore();
+            if (display_accounts(mainlist) == 1)
+            {
+                mainlist = deposit_withdraw(mainlist, input);
+            }
+        }
+        else if (input == 4)
+        {
             input = display_accounts(mainlist);
             if (input == 1)
             {
@@ -862,9 +1016,17 @@ int main()
                 cout << "Enter the IBAN of the sender:\n";
                 cout << ORANGE << "-> " << RESET;
                 getline(cin, acc1.IBAN);
+                for (int i = 0; i < acc2.IBAN.length(); i++)
+                {
+                    acc2.IBAN[i] = toupper(acc2.IBAN[i]);
+                }
                 cout << "Enter the IBAN of the receiver:\n";
                 cout << ORANGE << "-> " << RESET;
                 getline(cin, acc2.IBAN);
+                for (int i = 0; i < acc2.IBAN.length(); i++)
+                {
+                    acc2.IBAN[i] = toupper(acc2.IBAN[i]);
+                }
                 do
                 {
                     cout << "Enter the amount to send:" << endl;
@@ -874,7 +1036,7 @@ int main()
                 transfer(mainlist, amount, &acc1, &acc2);
             }
         }
-        else if (input == 4)
+        else if (input == 5)
         {
             do
             {
@@ -906,5 +1068,6 @@ int main()
     }
     cout << GREEN << "Thanks for using our services...\n";
     cout << "Exiting app..." << RESET << endl;
+    mainlist = sort(mainlist);
     export_data(mainlist);
 }
