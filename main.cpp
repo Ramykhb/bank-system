@@ -10,6 +10,7 @@ using namespace std;
 
 #define RED "\033[31m"
 #define GREEN "\033[32m"
+#define ORANGE "\033[38;5;214m"
 #define RESET "\033[0m"
 
 struct transaction
@@ -490,7 +491,7 @@ userList *create_account(userList *mainlist)
             cout << RED << "Invalid ID..." << RESET << endl;
         }
         cout << "Enter the user ID that you want to create a new account to: \n";
-        cout << "-> ";
+        cout << ORANGE << "-> " << RESET;
         error = true;
         cin >> input;
     } while (input <= 0 || input > i);
@@ -515,7 +516,8 @@ userList *create_account(userList *mainlist)
         {
             cout << RED << "Invalid input..." << RESET << endl;
         }
-        cout << "Enter the IBAN of your account...\n-> ";
+        cout << "Enter the IBAN of your account...\n";
+        cout << ORANGE << "-> " << RESET;
         getline(cin, newacc->IBAN);
         for (int i = 0; i < newacc->IBAN.length(); i++)
         {
@@ -547,7 +549,8 @@ userList *create_account(userList *mainlist)
         {
             cout << RED << "Invalid input..." << RESET << endl;
         }
-        cout << "Enter the name of your account...\n-> ";
+        cout << "Enter the name of your account...\n";
+        cout << ORANGE << "-> " << RESET;
         getline(cin, newacc->accountName);
         error = true;
 
@@ -560,7 +563,8 @@ userList *create_account(userList *mainlist)
         {
             cout << RED << "Invalid input..." << RESET << endl;
         }
-        cout << "Enter the currency of your account...\n-> ";
+        cout << "Enter the currency of your account...\n";
+        cout << ORANGE << "-> " << RESET;
         getline(cin, newacc->currency);
         if (newacc->currency == "?")
             newacc->currency = "€";
@@ -575,7 +579,8 @@ userList *create_account(userList *mainlist)
         {
             cout << RED << "Invalid input..." << RESET << endl;
         }
-        cout << "Enter the balance of your account...\n-> ";
+        cout << "Enter the balance of your account...\n";
+        cout << ORANGE << "-> " << RESET;
         cin >> newacc->balance;
         error = true;
 
@@ -588,7 +593,8 @@ userList *create_account(userList *mainlist)
         {
             cout << RED << "Invalid input..." << RESET << endl;
         }
-        cout << "Enter the limit deposit per day of your account...\n-> ";
+        cout << "Enter the limit deposit per day of your account...\n";
+        cout << ORANGE << "-> " << RESET;
         cin >> newacc->limitDepositPerDay;
         error = true;
 
@@ -601,7 +607,8 @@ userList *create_account(userList *mainlist)
         {
             cout << RED << "Invalid input..." << RESET << endl;
         }
-        cout << "Enter the limit withdraw per month of your account...\n-> ";
+        cout << "Enter the limit withdraw per month of your account...\n";
+        cout << ORANGE << "-> " << RESET;
         cin >> newacc->limitWithdrawPerMonth;
         error = true;
 
@@ -629,7 +636,8 @@ userList *create_user(userList *mainlist)
         {
             cout << RED << "Invalid input..." << RESET << endl;
         }
-        cout << "Enter your first name...\n-> ";
+        cout << "Enter your first name...\n";
+        cout << ORANGE << "-> " << RESET;
         getline(cin, newuser->fname);
         error = true;
 
@@ -642,7 +650,8 @@ userList *create_user(userList *mainlist)
         {
             cout << RED << "Invalid input..." << RESET << endl;
         }
-        cout << "Enter your last name...\n-> ";
+        cout << "Enter your last name...\n";
+        cout << ORANGE << "-> " << RESET;
         getline(cin, newuser->lname);
         error = true;
 
@@ -671,30 +680,40 @@ int display_accounts(userList *mainlist)
     transaction *txncur;
     bool accounts = true;
     int i = 1;
-    cout << fixed << setprecision(2);
+    if (usercur == NULL)
+    {
+        cout << RED << "No users available, please create a user before proceeding..." << RESET << endl;
+        return 0;
+    }
+    cout << ORANGE << setw(5) << "NB" << setw(10) << "IBAN" << setw(15) << "Name" << setw(10) << "Currency" << setw(10) << "Balance" << setw(10) << "LD/D" << setw(10) << "LW/M" << RESET << endl;
     while (usercur != NULL)
     {
         acccur = usercur->acct;
         while (acccur != NULL)
         {
             accounts = false;
-            cout << "\tAccount " << i++ << ":" << endl;
-            cout << "\tIBAN: " << acccur->IBAN << endl;
-            cout << "\tName: " << acccur->accountName << endl;
-            cout << acccur->currency;
-            cout << "\tCurrency: ";
+            cout << setw(5) << i++ << setw(10) << acccur->IBAN << setw(15) << acccur->accountName;
             if (acccur->currency != "$" && acccur->currency != "L.L")
             {
-                print_euro(L"€\n");
+                cout << "         ";
+                print_euro(L"€");
             }
             else
             {
-                cout << acccur->currency << endl;
+                cout << setw(10) << acccur->currency;
             }
-            cout << "\tBalance: " << acccur->balance << endl;
-            cout << "\tLimit deposit per day: " << acccur->limitDepositPerDay << endl;
-            cout << "\tLimit withdraw per month: " << acccur->limitWithdrawPerMonth << endl
-                 << endl;
+            if (static_cast<int>(acccur->balance) == acccur->balance)
+                cout << fixed << setprecision(0) << setw(10) << acccur->balance;
+            else
+                cout << fixed << setprecision(1) << setw(10) << acccur->balance;
+            if (static_cast<int>(acccur->limitDepositPerDay) == acccur->limitDepositPerDay)
+                cout << fixed << setprecision(0) << setw(10) << acccur->limitDepositPerDay;
+            else
+                cout << fixed << setprecision(1) << setw(10) << acccur->limitDepositPerDay;
+            if (static_cast<int>(acccur->limitWithdrawPerMonth) == acccur->limitWithdrawPerMonth)
+                cout << fixed << setprecision(0) << setw(10) << acccur->limitWithdrawPerMonth << endl;
+            else
+                cout << fixed << setprecision(1) << setw(10) << acccur->limitWithdrawPerMonth << endl;
             acccur = acccur->next;
         }
         usercur = usercur->next;
@@ -800,7 +819,7 @@ int main()
     bool error;
     string date;
     double amount;
-    cout << "Welcome to Cedars Bank...\n";
+    cout << "\nWelcome to Cedars Bank...\n";
     sort(mainlist);
     while (true)
     {
@@ -812,12 +831,12 @@ int main()
                 cout << RED << "Invalid input..." << RESET << endl;
             }
             cout << "How can we help you?\n";
-            cout << setw(5) << 1 << " Create a new user...\n";
-            cout << setw(5) << 2 << " Create a new account...\n";
-            cout << setw(5) << 3 << " Transfer money to another account...\n";
-            cout << setw(5) << 4 << " Delete transactions before a specified date...\n";
-            cout << setw(5) << 0 << " Exit application...\n";
-            cout << "-> ";
+            cout << ORANGE << setw(5) << 1 << RESET << " Create a new user...\n";
+            cout << ORANGE << setw(5) << 2 << RESET << " Create a new account...\n";
+            cout << ORANGE << setw(5) << 3 << RESET << " Transfer money to another account...\n";
+            cout << ORANGE << setw(5) << 4 << RESET << " Delete transactions before a specified date...\n";
+            cout << ORANGE << setw(5) << 0 << RESET << " Exit application...\n";
+            cout << ORANGE << "-> " << RESET;
             cin >> input;
             error = true;
         } while (input < 0 || input > 4);
@@ -841,15 +860,15 @@ int main()
             {
                 account acc1, acc2;
                 cout << "Enter the IBAN of the sender:\n";
-                cout << "-> ";
+                cout << ORANGE << "-> " << RESET;
                 getline(cin, acc1.IBAN);
                 cout << "Enter the IBAN of the receiver:\n";
-                cout << "-> ";
+                cout << ORANGE << "-> " << RESET;
                 getline(cin, acc2.IBAN);
                 do
                 {
                     cout << "Enter the amount to send:" << endl;
-                    cout << "-> ";
+                    cout << ORANGE << "-> " << RESET;
                     cin >> amount;
                 } while (amount < 0);
                 transfer(mainlist, amount, &acc1, &acc2);
@@ -860,7 +879,7 @@ int main()
             do
             {
                 cout << "Enter a specified date (dd/mm/yyyy)\n";
-                cout << "-> ";
+                cout << ORANGE << "-> " << RESET;
                 getline(cin, date);
             } while (!isValidDate(date));
 
@@ -872,7 +891,7 @@ int main()
                     cout << RED << "Invalid input..." << RESET << endl;
                 }
                 cout << "This action cannot be undone, do you want to proceed? [y/n]: " << endl;
-                cout << "-> ";
+                cout << ORANGE << "-> " << RESET;
                 cin >> inputchar;
                 error = true;
             } while (tolower(inputchar) != 'y' && tolower(inputchar) != 'n');
@@ -885,7 +904,7 @@ int main()
             }
         }
     }
-    cout << GREEN << "Thanks for using our services..." << endl
-         << "Exiting app..." << RESET << endl;
+    cout << GREEN << "Thanks for using our services...\n";
+    cout << "Exiting app..." << RESET << endl;
     export_data(mainlist);
 }
