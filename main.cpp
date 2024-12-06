@@ -169,7 +169,7 @@ userList *input_data(userList *mainlist)
             getline(iss, temp, ',');
             for (i = 0; i < temp.length(); i++)
             {
-                if (!isdigit(temp[i]))
+                if (!isdigit(temp[i]) && temp[i] != '.')
                 {
                     break;
                 }
@@ -466,6 +466,8 @@ userList *add_account(userList *mainlist, user *client, account *temp)
 userList *create_account(userList *mainlist)
 {
     user *current = mainlist->head;
+    user *temp;
+    account *acccur;
     bool error;
     int i = 0, input;
     if (current == NULL)
@@ -487,7 +489,7 @@ userList *create_account(userList *mainlist)
         {
             cout << RED << "Invalid ID..." << RESET << endl;
         }
-        cout << "Enter the user ID that you want too create a new account to: ";
+        cout << "Enter the user ID that you want to create a new account to: \n";
         cout << "-> ";
         error = true;
         cin >> input;
@@ -497,7 +499,10 @@ userList *create_account(userList *mainlist)
     while (current != NULL)
     {
         if (current->userID == input)
+        {
+            temp = current;
             break;
+        }
         current = current->next;
     }
 
@@ -512,9 +517,28 @@ userList *create_account(userList *mainlist)
         }
         cout << "Enter the IBAN of your account...\n-> ";
         getline(cin, newacc->IBAN);
+        for (int i = 0; i < newacc->IBAN.length(); i++)
+        {
+            newacc->IBAN[i] = toupper(newacc->IBAN[i]);
+        }
+        current = mainlist->head;
         error = true;
+        while (current != NULL)
+        {
+            acccur = current->acct;
+            while (acccur != NULL)
+            {
+                if (acccur->IBAN == newacc->IBAN)
+                {
+                    error = false;
+                    cout << RED << "This IBAN already belongs to another account..." << RESET << endl;
+                }
+                acccur = acccur->next;
+            }
+            current = current->next;
+        }
 
-    } while (newacc->IBAN == "");
+    } while (newacc->IBAN == "" || error == false);
 
     error = false;
     do
@@ -538,6 +562,8 @@ userList *create_account(userList *mainlist)
         }
         cout << "Enter the currency of your account...\n-> ";
         getline(cin, newacc->currency);
+        if (newacc->currency == "?")
+            newacc->currency = "€";
         error = true;
 
     } while (newacc->currency != "€" && newacc->currency != "$" && newacc->currency != "L.L");
@@ -566,7 +592,7 @@ userList *create_account(userList *mainlist)
         cin >> newacc->limitDepositPerDay;
         error = true;
 
-    } while (newacc->limitDepositPerDay < 0);
+    } while (newacc->limitDepositPerDay <= 0);
 
     error = false;
     do
@@ -579,9 +605,9 @@ userList *create_account(userList *mainlist)
         cin >> newacc->limitWithdrawPerMonth;
         error = true;
 
-    } while (newacc->limitWithdrawPerMonth < 0);
+    } while (newacc->limitWithdrawPerMonth <= 0);
 
-    return add_account(mainlist, current, newacc);
+    return add_account(mainlist, temp, newacc);
 }
 
 userList *create_user(userList *mainlist)
@@ -621,11 +647,6 @@ userList *create_user(userList *mainlist)
         error = true;
 
     } while (newuser->lname == "");
-
-    // newuser->next = NULL;
-    // newuser->previous = mainlist->tail;
-    // mainlist->tail->next = newuser;
-    // mainlist->tail = newuser;
     newuser->next = NULL;
     newuser->acct = NULL;
     if (mainlist->head == NULL)
@@ -660,6 +681,7 @@ int display_accounts(userList *mainlist)
             cout << "\tAccount " << i++ << ":" << endl;
             cout << "\tIBAN: " << acccur->IBAN << endl;
             cout << "\tName: " << acccur->accountName << endl;
+            cout << acccur->currency;
             cout << "\tCurrency: ";
             if (acccur->currency != "$" && acccur->currency != "L.L")
             {
@@ -733,18 +755,33 @@ void export_data(userList *mainlist)
     user *usercur = mainlist->head;
     account *acccur;
     transaction *txncur;
-    txtfile << fixed << setprecision(1);
     while (usercur != NULL)
     {
         txtfile << "-" << usercur->userID << "," << usercur->fname << "," << usercur->lname << "\n";
         acccur = usercur->acct;
         while (acccur != NULL)
         {
-            txtfile << "#" << acccur->IBAN << "," << acccur->accountName << "," << acccur->balance << acccur->currency << "," << acccur->limitDepositPerDay << acccur->currency << "," << acccur->limitWithdrawPerMonth << acccur->currency << "\n";
+            txtfile << "#" << acccur->IBAN << "," << acccur->accountName << ",";
+            if (static_cast<int>(acccur->balance) == acccur->balance)
+                txtfile << fixed << setprecision(0) << acccur->balance << acccur->currency << ",";
+            else
+                txtfile << fixed << setprecision(1) << acccur->balance << acccur->currency << ",";
+            if (static_cast<int>(acccur->limitDepositPerDay) == acccur->limitDepositPerDay)
+                txtfile << fixed << setprecision(0) << acccur->limitDepositPerDay << acccur->currency << ",";
+            else
+                txtfile << fixed << setprecision(1) << acccur->limitDepositPerDay << acccur->currency << ",";
+            if (static_cast<int>(acccur->limitWithdrawPerMonth) == acccur->limitWithdrawPerMonth)
+                txtfile << fixed << setprecision(0) << acccur->limitWithdrawPerMonth << acccur->currency << "\n";
+            else
+                txtfile << fixed << setprecision(1) << acccur->limitWithdrawPerMonth << acccur->currency << "\n";
             txncur = acccur->txn;
             while (txncur != NULL)
             {
-                txtfile << "*" << txncur->date << "," << txncur->amount << acccur->currency << "\n";
+                txtfile << "*" << txncur->date << ",";
+                if (static_cast<int>(txncur->amount) == txncur->amount)
+                    txtfile << fixed << setprecision(0) << txncur->amount << acccur->currency << "\n";
+                else
+                    txtfile << fixed << setprecision(1) << txncur->amount << acccur->currency << "\n";
                 txncur = txncur->next;
             }
             acccur = acccur->next;
