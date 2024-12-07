@@ -272,20 +272,26 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
                 txn = acccur->txn;
                 while (txn != NULL)
                 {
-                    sub = subtractdate(curdate, txn->date);
-                    if (sub <= 30 && txn->amount < 0)
-                        sum -= txn->amount;
+                    if (txn->amount < 0 && txn->date.substr(3, 7) == curdate.substr(3, 7))
+                    {
+                        sum += -1 * txn->amount;
+                    }
                     txn = txn->next;
                 }
-                if (acccur->balance >= amount && acccur->limitWithdrawPerMonth >= sub)
+                if (acccur->balance < amount)
                 {
-                    found = true;
-                    break;
+                    cout << RED << "Insufficient balance in the sender account..." << RESET << endl;
+                    return;
+                }
+                else if (acccur->limitWithdrawPerMonth < sum + amount)
+                {
+                    cout << RED << "Withdraw limit reached in the sender account..." << RESET << endl;
+                    return;
                 }
                 else
                 {
-                    cout << RED << "Insufficient balance or limit..." << RESET << endl;
-                    return;
+                    found = true;
+                    break;
                 }
             }
             acccur = acccur->next;
@@ -299,7 +305,6 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
         cout << RED << "Sender account not found..." << RESET << endl;
         return;
     }
-
     found = false;
     sum = 0;
     usercur = mainlist->head;
@@ -313,21 +318,23 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
         {
             if (targetacc->IBAN == target->IBAN)
             {
+                amount2 = convert(amount, acccur->currency, targetacc->currency);
                 while (txn != NULL)
                 {
-                    sub = subtractdate(curdate, txn->date);
-                    if (sub <= 1 && txn->amount > 0)
+                    if (txn->amount > 0 && txn->date == curdate)
+                    {
                         sum += txn->amount;
+                    }
                     txn = txn->next;
                 }
-                if (targetacc->limitDepositPerDay >= sum)
+                if (targetacc->limitDepositPerDay >= sum + amount2)
                 {
                     found = true;
                     break;
                 }
                 else
                 {
-                    cout << RED << "Limit exceeded..." << RESET << endl;
+                    cout << RED << "Deposit limit exceeded in target account..." << RESET << endl;
                     return;
                 }
             }
@@ -346,7 +353,6 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
     {
         transaction *send = new transaction;
         transaction *receive = new transaction;
-        amount2 = convert(amount, acccur->currency, targetacc->currency);
 
         acccur->balance -= amount;
         send->amount = -amount;
@@ -363,6 +369,7 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
 
     cout << GREEN << "Transaction completed successfully..." << RESET << endl;
 }
+
 userList *sort(userList *mainlist)
 {
     user *usercur = mainlist->head;
@@ -1016,9 +1023,9 @@ int main()
                 cout << "Enter the IBAN of the sender:\n";
                 cout << ORANGE << "-> " << RESET;
                 getline(cin, acc1.IBAN);
-                for (int i = 0; i < acc2.IBAN.length(); i++)
+                for (int i = 0; i < acc1.IBAN.length(); i++)
                 {
-                    acc2.IBAN[i] = toupper(acc2.IBAN[i]);
+                    acc1.IBAN[i] = toupper(acc1.IBAN[i]);
                 }
                 cout << "Enter the IBAN of the receiver:\n";
                 cout << ORANGE << "-> " << RESET;
