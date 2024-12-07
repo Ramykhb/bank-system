@@ -951,6 +951,7 @@ int main()
         error = false;
         do
         {
+            export_data(mainlist);
             if (error)
             {
                 cout << RED << "Invalid input..." << RESET << endl;
