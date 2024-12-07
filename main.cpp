@@ -949,6 +949,7 @@ int main()
     while (true)
     {
         error = false;
+        export_data(mainlist);
         do
         {
             if (error)
@@ -967,7 +968,6 @@ int main()
             error = true;
         } while (input < 0 || input > 5);
         cin.ignore();
-        export_data(mainlist);
         if (input == 0)
         {
             break;
