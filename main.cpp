@@ -949,7 +949,6 @@ int main()
     while (true)
     {
         error = false;
-        export_data(mainlist);
         do
         {
             if (error)
@@ -1059,6 +1058,7 @@ int main()
                 cout << "All transactions before " << date << " were successfully deleted..." << RESET << endl;
             }
         }
+        export_data(mainlist);
     }
     cout << GREEN << "Thanks for using our services...\n";
     cout << "Exiting app..." << RESET << endl;
