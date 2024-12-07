@@ -96,20 +96,6 @@ string getCurrentDate()
     return string(buffer);
 }
 
-double subtractdate(string date1, string date2)
-{
-    tm time1 = {}, time2 = {};
-    istringstream ss1(date1), ss2(date2);
-    ss1 >> get_time(&time1, "%d/%m/%Y");
-    ss2 >> get_time(&time2, "%d/%m/%Y");
-
-    std::chrono::system_clock::time_point tp1 = chrono::system_clock::from_time_t(mktime(&time1));
-    std::chrono::system_clock::time_point tp2 = chrono::system_clock::from_time_t(mktime(&time2));
-    chrono::duration<double> dif = tp1 - tp2;
-
-    return dif.count() / 86400;
-}
-
 userList *input_data(userList *mainlist)
 {
     ifstream txtfile("database.txt");
