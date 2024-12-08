@@ -1102,6 +1102,7 @@ int main()
                 cout << "All transactions before " << date << " were successfully deleted..." << RESET << endl;
             }
         }
+        mainlist = sort(mainlist);
         export_data(mainlist);
     }
     cout << GREEN << "Thanks for using our services...\n";
