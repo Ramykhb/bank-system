@@ -81,7 +81,7 @@ bool compareDate(const string &dateStr, const string &dateStr1)
 
     auto tp1 = chrono::system_clock::from_time_t(mktime(&time1));
     auto tp2 = chrono::system_clock::from_time_t(mktime(&time2));
-    if (tp1 <= tp2)
+    if (tp1 < tp2)
         return true;
     return false;
 }
@@ -548,7 +548,10 @@ userList *create_account(userList *mainlist)
         error = true;
 
     } while (newacc->accountName == "");
-
+    for (int i = 0; i < newacc->accountName.length(); i++)
+    {
+        newacc->accountName[i] = tolower(newacc->accountName[i]);
+    }
     error = false;
     do
     {
