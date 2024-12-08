@@ -928,8 +928,8 @@ userList *delete_transactions(userList *mainlist, string date)
                     acccur->txn = transcur->next;
                     delete transcur;
                 }
-                acccur = acccur->next;
             }
+            acccur = acccur->next;
         }
 
         usercur = usercur->next;
