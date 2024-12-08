@@ -356,56 +356,97 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
     cout << GREEN << "Transaction completed successfully..." << RESET << endl;
 }
 
+transaction *partition(transaction *head, transaction *end, transaction **newHead, transaction **newEnd)
+{
+    transaction *pivot = end;
+    transaction *prev = NULL, *cur = head, *tail = pivot;
+
+    while (cur != pivot)
+    {
+        if (compareDate(cur->date, pivot->date))
+        {
+            if (*newHead == NULL)
+            {
+                *newHead = cur;
+            }
+            prev = cur;
+            cur = cur->next;
+        }
+        else
+        {
+            if (prev)
+            {
+                prev->next = cur->next;
+            }
+            transaction *temp = cur->next;
+            cur->next = NULL;
+            tail->next = cur;
+            tail = cur;
+            cur = temp;
+        }
+    }
+
+    if (*newHead == NULL)
+    {
+        *newHead = pivot;
+    }
+
+    *newEnd = tail;
+
+    return pivot;
+}
+
+transaction *quickSort(transaction *head, transaction *end)
+{
+    if (head == NULL || head == end)
+    {
+        return head;
+    }
+
+    transaction *newHead = NULL, *newEnd = NULL;
+    transaction *pivot = partition(head, end, &newHead, &newEnd);
+
+    if (newHead != pivot)
+    {
+        transaction *temp = newHead;
+        while (temp->next != pivot)
+        {
+            temp = temp->next;
+        }
+        temp->next = NULL;
+
+        newHead = quickSort(newHead, temp);
+
+        temp = newHead;
+        while (temp != NULL && temp->next != NULL)
+        {
+            temp = temp->next;
+        }
+        temp->next = pivot;
+    }
+
+    pivot->next = quickSort(pivot->next, newEnd);
+
+    return newHead;
+}
+
 userList *sort(userList *mainlist)
 {
-    user *usercur = mainlist->head;
-
-    while (usercur != NULL)
+    transaction *tail;
+    for (user *currentUser = mainlist->head; currentUser != nullptr; currentUser = currentUser->next)
     {
-        account *acccur = usercur->acct;
-        while (acccur != NULL)
+        for (account *currentAccount = currentUser->acct; currentAccount != nullptr; currentAccount = currentAccount->next)
         {
-            transaction *head = acccur->txn;
-            if (!head)
+            if (currentAccount->txn != nullptr)
             {
-                acccur = acccur->next;
-                continue;
-            }
-
-            transaction *sorted = NULL;
-
-            while (head != sorted)
-            {
-                transaction *cur = head;
-                transaction *prev = NULL;
-
-                while (cur->next != sorted)
+                tail = currentAccount->txn;
+                while (tail != nullptr && tail->next != nullptr)
                 {
-                    if (!compareDate(cur->date, cur->next->date))
-                    {
-                        transaction *next = cur->next;
-                        cur->next = next->next;
-                        next->next = cur;
-
-                        if (prev)
-                            prev->next = next;
-                        else
-                            head = next;
-
-                        prev = next;
-                    }
-                    else
-                    {
-                        prev = cur;
-                        cur = cur->next;
-                    }
+                    tail = tail->next;
                 }
-                sorted = cur;
+                currentAccount->txn = quickSort(currentAccount->txn, tail);
             }
-            acccur->txn = head;
-            acccur = acccur->next;
         }
-        usercur = usercur->next;
     }
     return mainlist;
 }
