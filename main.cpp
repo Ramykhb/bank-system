@@ -63,13 +63,6 @@ bool isValidDate(const string &dateStr)
         return false;
     }
     return true;
-
-    // auto parsedTime = chrono::system_clock::from_time_t(mktime(&time));
-    // auto now = chrono::system_clock::now();
-    // if (parsedTime > now)
-    //     return true;
-    // cout << "Enter an upcoming date...\n";
-    // return false;
 }
 
 bool compareDate(const string &dateStr, const string &dateStr1)
@@ -244,7 +237,7 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
     user *usercur = mainlist->head;
     account *acccur;
     transaction *txn;
-    double sum = 0, sub;
+    double sum = 0;
     bool found = false;
     string curdate = getCurrentDate();
 
@@ -260,7 +253,7 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
                 {
                     if (txn->amount < 0 && txn->date.substr(3, 7) == curdate.substr(3, 7))
                     {
-                        sum += -1 * txn->amount;
+                        sum -= txn->amount;
                     }
                     txn = txn->next;
                 }
@@ -335,24 +328,43 @@ void transfer(userList *mainlist, double amount, account *sender, account *targe
         cout << RED << "Target account not found..." << RESET << endl;
         return;
     }
-    else
+    usercur = mainlist->head;
+    while (usercur != NULL)
     {
-        transaction *send = new transaction;
-        transaction *receive = new transaction;
-
-        acccur->balance -= amount;
-        send->amount = -amount;
-        send->date = curdate;
-        send->next = acccur->txn;
-        acccur->txn = send;
-
-        targetacc->balance += amount2;
-        receive->amount = amount2;
-        receive->date = curdate;
-        receive->next = targetacc->txn;
-        targetacc->txn = receive;
+        acccur = usercur->acct;
+        while (acccur != NULL)
+        {
+            if (acccur->IBAN == sender->IBAN)
+            {
+                transaction *send = new transaction;
+                transaction *tmp = acccur->txn;
+                while (tmp != NULL)
+                {
+                    tmp = tmp->next;
+                }
+                acccur->balance -= amount;
+                send->amount = -amount;
+                send->date = curdate;
+                send->next = acccur->txn;
+                tmp->next = send;
+            }
+            if (targetacc->IBAN == target->IBAN)
+            {
+                transaction *receive = new transaction;
+                transaction *tmp = acccur->txn;
+                while (tmp != NULL)
+                {
+                    tmp = tmp->next;
+                }
+                targetacc->balance += amount2;
+                receive->amount = amount2;
+                receive->date = curdate;
+                receive->next = targetacc->txn;
+                targetacc->txn = receive;
+            }
+            acccur = acccur->next;
+        }
     }
-
     cout << GREEN << "Transaction completed successfully..." << RESET << endl;
 }
 
@@ -931,7 +943,6 @@ userList *delete_transactions(userList *mainlist, string date)
             }
             acccur = acccur->next;
         }
-
         usercur = usercur->next;
     }
     return mainlist;
@@ -1102,7 +1113,6 @@ int main()
                 cout << "All transactions before " << date << " were successfully deleted..." << RESET << endl;
             }
         }
-        mainlist = sort(mainlist);
         export_data(mainlist);
     }
     cout << GREEN << "Thanks for using our services...\n";
